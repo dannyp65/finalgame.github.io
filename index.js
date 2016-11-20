@@ -5,9 +5,18 @@ frameRate(60);
 
 //ProgramCodeGoesHere
 //frameRate(10);
+//frameRate(10);
+angleMode = "radians";
+var adeg = TWO_PI/360;
+var keyArray = [];
 var gameState = 0;
 var mountains = [[],[],[],[],[],[]]; 
 var a=random(1500);
+var gravity = new PVector(0, 0.2);
+var shootForce = new PVector(1,-1);
+var wind = new PVector(1, 0);
+var windSpeed = 0;
+var balls = [];
 for (var i=0; i<=5; i++) {
     for (var j=0; j<=40; j++) {
         var n = noise(a);
@@ -43,7 +52,142 @@ var drawmount = function(){
     }
 };
 
+var uObj = function(x,y){
+    this.pos = new PVector(x,y);
+    this.sangle = 280*adeg;
+    this.turn = 1;
+    this.shoot = 0;
+};
+var ballObj = function(x, y) {
+    this.pos = new PVector(x,y);
+    this.velocity = new PVector(4,-5);
+    this.acceleration = new PVector(0, 0);
+    this.aAcc = 0;
+    this.aVelocity = 0;
+    this.angle = 0;
+    this.size = 200;
+    this.mass = this.size / 5;
+    this.drag = false;
+    this.released = false;
+    this.shoot = false;
+  //  this.hit = 0;
+    //this.run = 0;
+};
+var powerObj = function(x,y){
+    this.x = x;
+    this.y = y; 
+    
+};
+var power = new powerObj(100,380);
+var user =  new uObj(100,300);
+var ball = new ballObj(100,100);
 
+uObj.prototype.draw = function() {
+    fill(168, 168, 168);
+    ellipse(this.pos.x, this.pos.y,40, 10);
+    fill(36, 36, 36);
+    ellipse(this.pos.x, this.pos.y,20, 5);
+    fill(30, 229, 247, 70);
+    arc(this.pos.x, this.pos.y,20, 20, 180*adeg, 360*adeg);
+    strokeWeight(2);
+    stroke(255, 0, 0);
+    var xadd1 = this.pos.x + 30*cos(this.sangle);
+    var yadd1 = this.pos.y + 30*sin(this.sangle);
+    var xadd2 = this.pos.x + 25*cos(this.sangle + 15*adeg );
+    var yadd2 = this.pos.y + 25*sin(this.sangle + 15*adeg);
+    var xadd3 = this.pos.x + 25*cos(this.sangle - 15*adeg);
+    var yadd3 = this.pos.y + 25*sin(this.sangle - 15*adeg);
+    fill(0, 0, 0);
+    triangle(xadd1, yadd1, xadd2, yadd2, xadd3, yadd3);
+    //line(this.pos.x, this.pos.y, this.pos.x + xadd,this.pos.y + yadd);
+};
+
+powerObj.prototype.draw = function() {
+    fill(0, 111, 255);
+    line(100, 380, 300, 380);
+    noStroke();
+    ellipse(this.x, this.y, 20, 20);
+    rect(320,360, 70,30, 6);
+    fill(252, 252, 252);
+    text("SHOOT", 330, 370, 50,30);
+    
+    
+};
+uObj.prototype.move =function(){
+     if((keyArray[LEFT] === 1) && (this.pos.x > 35)){
+            this.pos.x= this.pos.x -3;
+    }
+       
+    if((keyArray[RIGHT] === 1) && (this.pos.x <780)){
+            this.pos.x= this.pos.x +3;
+    }
+    if((keyArray[UP] === 1) && (this.pos.y > 20)){
+        if(this.sangle < 360*adeg){
+            this.sangle= this.sangle + 1*adeg;
+        }
+    }
+      
+    if((keyArray[DOWN] === 1) && (this.pos.y <380)){
+        if(this.sangle > 180*adeg){
+            this.sangle= this.sangle - 1*adeg;
+        }
+    }
+    
+   
+};
+ballObj.prototype.draw = function() {
+    
+    if(this.shoot){
+        ellipse(this.pos.x, this.pos.y, 10, 10);
+     //   noStroke();
+   //     fill(250, 35, 114);
+    //    pushMatrix();
+    //    translate(this.pos.x, this.pos.y);
+    //    rotate(this.angle);
+    //    ellipse(0, 0,this.size, this.size);
+    //    popMatrix();
+    }
+};
+ballObj.prototype.applyForce = function(force) {
+    var f = PVector.div(force, this.mass);
+    this.acceleration.add(f);
+};
+
+ballObj.prototype.updateposition = function() {
+    if(this.shoot){
+        var gravityForce = PVector.mult(gravity, this.mass);
+        this.applyForce(gravityForce);
+       // this.computeBump();
+      //  this.applyForce(this.bumpForce);
+      //  this.bumpForce.set(0, 0);
+        var windForce = PVector.mult(wind, this.mass);
+        windForce.mult(windSpeed);
+        this.applyForce(windForce);
+        var airFriction = PVector.mult(this.velocity,-0.02);
+        this.applyForce(airFriction);
+    
+        this.velocity.add(this.acceleration);
+        this.pos.add(this.velocity);
+   
+        
+    
+        this.acceleration.set(0, 0);
+        this.aAcc = this.velocity.mag()/16;	
+        if (this.velocity.x < 0) {
+            this.aAcc = -this.aAcc;
+        }
+        this.aVelocity += this.aAcc;
+        this.aVelocity *= 0.98; // drag
+        if((this.velocity.x === 0) && (this.velocity.y === 0 )){
+            this.angle = 0;
+        }
+        else{
+            this.angle += this.aVelocity*adeg;
+        }
+    
+    }
+ 
+};
 var state0 = function(){
     fill(175, 233, 247);
     noStroke();
@@ -60,13 +204,36 @@ var state0 = function(){
 var mouseClicked = function(){
     
     if( (mouseX > 140) && (mouseX < 260) && (mouseY > 130) && (mouseY < 170) && (gameState === 0)){
-        gameState = 2;
+        gameState = 2; // start game
     }
     if( (mouseX > 140) && (mouseX < 260) && (mouseY > 200) && (mouseY < 240) && (gameState === 0)){
-        gameState = 1;
+        gameState = 1; // instruction
     }
     if( (mouseX > 180) && (mouseX < 220) && (mouseY > 345) && (mouseY < 370) && (gameState === 1)){
-        gameState = 0;
+        gameState = 0; // go back to main menu from instruction menu
+    }
+    if( (mouseX > 100) && (mouseX < 300) && (mouseY > 370) && (mouseY < 390) && (gameState === 2) && (user.turn === 0)){
+        power.x = mouseX;
+        //power.y = mouseY;
+    }
+    if( (mouseX > 320) && (mouseX < 390) && (mouseY > 360) && (mouseY < 390) && (gameState === 2) && (user.turn === 1)){
+        if(balls.length > 1){
+            balls.slice(0,balls.length);
+        }
+        balls.push(new ballObj(user.pos.x, user.pos.y));
+        user.shoot = 1;
+        var xadd1 = user.pos.x + 30*cos(user.sangle);
+        var yadd1 = user.pos.y + 30*sin(user.sangle);
+        
+       // balls[1].pos.x = user.pos.x;
+      //  ball[0].pos.y = user.pos.y;
+        balls[0].velocity = new PVector(xadd1-user.pos.x, yadd1 -  user.pos.y);
+        //ball.velocity = new PVector(1, 3);
+        balls[0].velocity.div(3);
+        balls[0].shoot = true;
+        balls[0].release = false;
+        text("something", 200, 200,40, 40);
+        //user.shoot = 0;
     }
  
 };
@@ -87,6 +254,12 @@ var instruction = function(){
     text("BACK",180,360);
 
 };
+var keyPressed = function() {
+    keyArray[keyCode] = 1;
+};
+var keyReleased = function() {
+    keyArray[keyCode] = 0;
+};
 
 var draw = function() {
     background(3, 102, 242);
@@ -102,13 +275,27 @@ var draw = function() {
            break;
         case 1:
             instruction();
-            break;
+        break;
+        case 2:
+            user.draw();
+            user.move();
+            power.draw();
+            for (var i=0; i<balls.length; i++) {
+                balls[i].updateposition();
+                balls[i].draw();
+            }
+            ball.updateposition();
+            ball.draw();
+            
+        break;
         
    }
 
     
 
 };
+
+
 
 
 
