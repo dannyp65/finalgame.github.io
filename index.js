@@ -5,11 +5,12 @@ frameRate(60);
 
 //ProgramCodeGoesHere
 //frameRate(10);
-//frameRate(10);
 angleMode = "radians";
 var adeg = TWO_PI/360;
 var keyArray = [];
 var gameState = 0;
+var curFrame = frameCount;
+var gamelevel = 1;
 var mountains = [[],[],[],[],[],[]]; 
 var a=random(1500);
 var gravity = new PVector(0, 0.2);
@@ -58,7 +59,7 @@ var uObj = function(x,y){
     this.turn = 1;
     this.shoot = 0;
 };
-var ballObj = function(x, y) {
+var ballObj = function(x, y, z) {
     this.pos = new PVector(x,y);
     this.velocity = new PVector(4,-5);
     this.acceleration = new PVector(0, 0);
@@ -70,17 +71,24 @@ var ballObj = function(x, y) {
     this.drag = false;
     this.released = false;
     this.shoot = false;
-  //  this.hit = 0;
-    //this.run = 0;
+    this.hit = false;
+    this.range = false;
 };
 var powerObj = function(x,y){
     this.x = x;
     this.y = y; 
     
 };
+var NPCObj = function(x,y){
+    this.pos = new PVector(x,y);
+    this.sangle = 280*adeg;
+    this.turn = 1;
+    this.shoot = 0;
+};
 var power = new powerObj(100,380);
 var user =  new uObj(100,300);
 var ball = new ballObj(100,100);
+var NPC = [new NPCObj(370, 80)];
 
 uObj.prototype.draw = function() {
     fill(168, 168, 168);
@@ -135,10 +143,32 @@ uObj.prototype.move =function(){
     
    
 };
+NPCObj.prototype.draw = function() {
+    noStroke();
+    fill(168, 168, 168);
+    ellipse(this.pos.x, this.pos.y,40, 10);
+    fill(36, 36, 36);
+    ellipse(this.pos.x, this.pos.y,20, 5);
+    fill(8, 6, 1, 150);
+    arc(this.pos.x, this.pos.y,20, 20, 180*adeg, 360*adeg);
+    strokeWeight(2);
+    stroke(255, 0, 0);
+    var xadd1 = this.pos.x + 30*cos(this.sangle);
+    var yadd1 = this.pos.y + 30*sin(this.sangle);
+    var xadd2 = this.pos.x + 25*cos(this.sangle + 15*adeg );
+    var yadd2 = this.pos.y + 25*sin(this.sangle + 15*adeg);
+    var xadd3 = this.pos.x + 25*cos(this.sangle - 15*adeg);
+    var yadd3 = this.pos.y + 25*sin(this.sangle - 15*adeg);
+    fill(0, 0, 0);
+    triangle(xadd1, yadd1, xadd2, yadd2, xadd3, yadd3);
+    //line(this.pos.x, this.pos.y, this.pos.x + xadd,this.pos.y + yadd);
+};
 ballObj.prototype.draw = function() {
     
     if(this.shoot){
-        ellipse(this.pos.x, this.pos.y, 10, 10);
+        noStroke();
+        fill(255, 238, 0);
+        ellipse(this.pos.x, this.pos.y, 5, 5);
      //   noStroke();
    //     fill(250, 35, 114);
     //    pushMatrix();
@@ -152,7 +182,17 @@ ballObj.prototype.applyForce = function(force) {
     var f = PVector.div(force, this.mass);
     this.acceleration.add(f);
 };
-
+ballObj.prototype.checkHit = function() {
+    for (var i=0; i<NPC.length; i++) {
+        var d = dist(this.pos.x, this.pox.y, NPC[i].pos.x, NPC[i].pos.y);
+        if(d <  30){
+            this.shoot = false;
+        }
+        else if (this.pos.y > 400){
+            this.range = false; 
+        }
+    }
+};
 ballObj.prototype.updateposition = function() {
     if(this.shoot){
         var gravityForce = PVector.mult(gravity, this.mass);
@@ -188,6 +228,13 @@ ballObj.prototype.updateposition = function() {
     }
  
 };
+var makewind = function(){
+    if (curFrame < frameCount-120) {
+        curFrame = frameCount;
+        windSpeed = random(-0.05, 0.05);
+    }
+    
+};
 var state0 = function(){
     fill(175, 233, 247);
     noStroke();
@@ -212,32 +259,38 @@ var mouseClicked = function(){
     if( (mouseX > 180) && (mouseX < 220) && (mouseY > 345) && (mouseY < 370) && (gameState === 1)){
         gameState = 0; // go back to main menu from instruction menu
     }
-    if( (mouseX > 100) && (mouseX < 300) && (mouseY > 370) && (mouseY < 390) && (gameState === 2) && (user.turn === 0)){
-        power.x = mouseX;
-        //power.y = mouseY;
-    }
     if( (mouseX > 320) && (mouseX < 390) && (mouseY > 360) && (mouseY < 390) && (gameState === 2) && (user.turn === 1)){
-        if(balls.length > 1){
-            balls.slice(0,balls.length);
-        }
-        balls.push(new ballObj(user.pos.x, user.pos.y));
+      //  balls.slice(0,balls.length);
+        balls.push(new ballObj(user.pos.x, user.pos.y, 1));
         user.shoot = 1;
         var xadd1 = user.pos.x + 30*cos(user.sangle);
         var yadd1 = user.pos.y + 30*sin(user.sangle);
-        
-       // balls[1].pos.x = user.pos.x;
-      //  ball[0].pos.y = user.pos.y;
         balls[0].velocity = new PVector(xadd1-user.pos.x, yadd1 -  user.pos.y);
-        //ball.velocity = new PVector(1, 3);
         balls[0].velocity.div(3);
         balls[0].shoot = true;
-        balls[0].release = false;
-        text("something", 200, 200,40, 40);
-        //user.shoot = 0;
+       // balls[0].release = false;
     }
  
 };
-
+var takeBullet = function(){
+    if((ball.range === true) || (ball.hit === true)){
+        ball.shoot = false;
+    }
+};
+mouseDragged = function(){
+    if( (mouseY < 390) && (mouseY > 370)){
+        if(mouseX < 100 ){
+            power.x = 100;
+        }
+        else if( mouseX > 300){
+            power.x = 300;
+        }
+        else{
+            power.x = mouseX;
+        }
+    }
+    
+};
 var instruction = function(){
     fill(175, 233, 247);
     noStroke();
@@ -279,13 +332,28 @@ var draw = function() {
         case 2:
             user.draw();
             user.move();
+            for (var i=0; i<NPC.length; i++) {
+                NPC[i].draw();
+            }
             power.draw();
+            makewind();
+            stroke(255, 0, 0);
+            if(windSpeed < 0){
+                
+              triangle(340, 10, 340, 30, 330,20);
+              line(340, 20, 380, 20);
+            }
+            else{
+              triangle(380, 10, 380, 30, 390,20);
+              line(340, 20, 380, 20);
+            }
             for (var i=0; i<balls.length; i++) {
                 balls[i].updateposition();
                 balls[i].draw();
             }
-            ball.updateposition();
-            ball.draw();
+         //   ball.updateposition();
+         //   ball.draw();
+            takeBullet();
             
         break;
         
@@ -294,6 +362,7 @@ var draw = function() {
     
 
 };
+
 
 
 
