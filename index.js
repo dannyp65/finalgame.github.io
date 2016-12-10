@@ -4,13 +4,12 @@ frameRate(60);
 
 
 //ProgramCodeGoesHere
-//frameRate(10);
 angleMode = "radians";
 var adeg = TWO_PI/360;
 var keyArray = [];
-var gameState = 2;
+var gameState = 0;
 var curFrame = frameCount;
-var GameTurn = 2;
+var GameTurn = 0;
 var gamelevel = 3;
 var mountains = [[],[],[],[],[],[]]; 
 var a=random(1500);
@@ -19,6 +18,7 @@ var shootForce = new PVector(1,-1);
 var wind = new PVector(1, 0);
 var windSpeed = 0;
 var balls = [];
+var wincheck = 0;
 var monteCarlo = function() {
     var v1 = random(150, 255);
     var v2 = random(150, 255);
@@ -130,7 +130,7 @@ var ballObj = function(x, y, z, type) {
     this.angle = 0;
     this.size = 200;
     this.mass = this.size / 5;
-    this.shoot = false;
+    this.Bshoot = false;
     this.hit = false;
     this.range = false;
     this.type = type;
@@ -139,9 +139,9 @@ var uObj = function(x,y){
     this.moves = 100;
     this.pos = new PVector(x,y);
     this.sangle = 280*adeg;
-    this.turn = 1;
+    this.turn = 0;
     this.health = 100;
-    this.shoot = 0;
+    this.Ushoot = 0;
     this.type = 1;
     this.bullet = new ballObj(x,y,1,this.type);
     this.power = 0;
@@ -159,8 +159,9 @@ var NPCObj = function(x,y, turnNum){
     this.bullet = new ballObj(x,y,2,2);
     this.sangle = 260*adeg;
     this.myTurn = turnNum;
-    this.shoot = 0;
+    this.Nshoot = 0;
     this.NPCState = [new waitState(), new moveState(), new angleState(), new shootState()];
+    this.turnAngle = 0;
     this.curState = 0;
     this.numMoves = 0;
     this.dir = 0;
@@ -180,17 +181,43 @@ var exObj = function(x, y) {
     this.c2 = random(0, 255);
     this.timeLeft = 120;
 };
-var power = new powerObj(300,380);
-var user =  new uObj(100,300);
+var power = new powerObj(250,380);
+var user =  new uObj(round(random(100, 350)),round(random(100, 350)));
 var ball = new ballObj(100,100);
-var NPC = [new NPCObj(320, 180, 2), new NPCObj(320, 250, 3), new NPCObj(200, 250, 4)];
+//var NPC = [new NPCObj(320, 180, 2), new NPCObj(320, 250, 3), new NPCObj(200, 250, 4)];
+var NPC = [];
 var explode = [];
-
+var makeNPC = function(){
+    if(gamelevel === 1){
+        var a = 100;
+        for(var i = 0; i < 2; i++){
+            var xcor = round(random(20, 380));
+            NPC.push(new NPCObj(xcor, a, i+1));
+            a = a + round(random(40, 100));
+        }
+    }
+    else if (gamelevel === 2){
+        var a = 100;
+        for(var i = 0; i < 4; i++){
+            var xcor = round(random(20, 380));
+            NPC.push(new NPCObj(xcor, a, i+1));
+            a = a + round(random(40, 60));
+        }
+    }
+    else if (gamelevel === 3){
+        var a = 100;
+        for(var i = 0; i < 6; i++){
+            var xcor = round(random(20, 380));
+            NPC.push(new NPCObj(xcor, a, i+1));
+            a = a + round(random(30, 40));
+        }
+    }
+};
 //explode functions
 exObj.prototype.move = function() {
     var v = new PVector(this.velocity.y*cos(this.velocity.x),
-	this.velocity.y*sin(this.velocity.x));
-    this.position.add(v);	
+    this.velocity.y*sin(this.velocity.x));
+    this.position.add(v);   
     this.timeLeft--;
 };
 var makeExplosion = function(x, y) {
@@ -231,9 +258,17 @@ uObj.prototype.draw = function() {
     var yadd2 = this.pos.y + 25*sin(this.sangle + 15*adeg);
     var xadd3 = this.pos.x + 25*cos(this.sangle - 15*adeg);
     var yadd3 = this.pos.y + 25*sin(this.sangle - 15*adeg);
-    fill(0, 0, 0);
-    triangle(xadd1, yadd1, xadd2, yadd2, xadd3, yadd3);
+    
+    strokeWeight(3);
+    stroke(161, 156, 156);
+    line(this.pos.x - 25, this.pos.y - 15, this.pos.x +25 , this.pos.y-15);
+    stroke(250, 37, 73);
+
+    line(this.pos.x - 25, this.pos.y - 15, this.pos.x - 25 + this.health/2, this.pos.y-15);
     //line(this.pos.x, this.pos.y, this.pos.x + xadd,this.pos.y + yadd);
+    fill(245, 175, 35);
+    noStroke();
+    triangle(xadd1, yadd1, xadd2, yadd2, xadd3, yadd3);
 };
 NPCObj.prototype.draw = function() {
     if(this.health > 0){
@@ -246,8 +281,8 @@ NPCObj.prototype.draw = function() {
     ellipse(this.pos.x, this.pos.y,20, 5);
     fill(8, 6, 1, 150);
     arc(this.pos.x, this.pos.y,20, 20, 180*adeg, 360*adeg);
-    strokeWeight(2);
-    stroke(255, 0, 0);
+    
+    
     var xadd1 = this.pos.x + 30*cos(this.sangle);
     var yadd1 = this.pos.y + 30*sin(this.sangle);
     var xadd2 = this.pos.x + 25*cos(this.sangle + 15*adeg );
@@ -255,16 +290,23 @@ NPCObj.prototype.draw = function() {
     var xadd3 = this.pos.x + 25*cos(this.sangle - 15*adeg);
     var yadd3 = this.pos.y + 25*sin(this.sangle - 15*adeg);
     fill(0, 0, 0);
+    noStroke();
+    fill(245, 175, 35);
     triangle(xadd1, yadd1, xadd2, yadd2, xadd3, yadd3);
-    text(this.curState, this.pos.x, this.pos.y + 50, 20, 20);
-    text(this.v0, this.pos.x, this.pos.y + 40, 20, 20);
+    strokeWeight(2);
+    stroke(255, 0, 0);
+    strokeWeight(3);
+    stroke(161, 156, 156);
+    line(this.pos.x - 25, this.pos.y - 15, this.pos.x +25 , this.pos.y-15);
+    stroke(162, 235, 120);
     line(this.pos.x - 25, this.pos.y - 15, this.pos.x - 25 + this.health/2, this.pos.y-15);
+    
     //line(this.pos.x, this.pos.y, this.pos.x + xadd,this.pos.y + yadd);
     }
 };
 ballObj.prototype.draw = function() {
     
-    if(this.shoot){
+    if(this.Bshoot){
         if(this.type === 1){
             noStroke();
             fill(255, 238, 0);
@@ -278,6 +320,7 @@ ballObj.prototype.draw = function() {
         else if ( this.type === 2){
             noStroke();
             var ang = this.velocity.heading();
+            pushMatrix();
             translate(this.pos.x, this.pos.y);
             rotate(ang);
             fill(209, 202, 202);
@@ -323,8 +366,13 @@ powerObj.prototype.draw = function() {
     var str = pow.toString();
     fill(235, 38, 94);
     rect(60, 370, 25, 20, 5);
-    fill(0, 0, 0);
+    
+    var f = createFont("tohoma");
+    textFont(f);
     textSize(25);
+    fill(0, 0, 0);
+    text("FIRE", 328, 370, 60,50);
+    fill(196, 196, 196);
     text("FIRE", 330, 369, 60,50);
     textSize(12);
     text(str, 63, 375, 60, 60);
@@ -334,7 +382,7 @@ powerObj.prototype.draw = function() {
 // user Object functions
 uObj.prototype.move =function(){
     this.bullet.updateposition();
-    if(this.turn === 1 ){
+    if(this.turn === GameTurn ){
      if((keyArray[LEFT] === 1) && (this.pos.x > 35) && (this.moves > 0)){
             this.moves = this.moves -1;
             this.pos.x= this.pos.x -1;
@@ -360,8 +408,8 @@ uObj.prototype.move =function(){
    
 };
 uObj.prototype.handleShoot = function(mx, my){
-    if( (mx > 320) && (mx < 400) && (my > 340) && (my < 400) && (gameState === 2) && (this.turn === 1)){
-        if( this.bullet.shoot === false){
+    if( (mx > 320) && (mx < 400) && (my > 340) && (my < 400) && (gameState === 2) && (this.turn === GameTurn)){
+        if( this.bullet.Bshoot === false){
         var pwer = 4.3 - 0.0125*(power.x-100);
         this.bullet.pos.x = this.pos.x;
         this.bullet.pos.y = this.pos.y;
@@ -370,21 +418,25 @@ uObj.prototype.handleShoot = function(mx, my){
         this.bullet.velocity = new PVector(xadd1, yadd1);
         this.bullet.velocity.div(pwer);
         this.bullet.release = false;
-        this.bullet.shoot = true;
-        fill(255, 252, 255);
-        textSize(25);
-        text("FIRE", 325, 350, 60,50);
+        this.bullet.Bshoot = true;
+        this.Ushoot = true; 
         }
         
     }
     
 
 };
-
+uObj.prototype.changeTurn = function(){
+    if((GameTurn === 0) && (this.Ushoot === true) && (this.bullet.range === true)){
+        this.Ushoot = false;
+        this.bullet.range = false;
+        GameTurn++;
+    }
+};
 // NPC Function
 NPCObj.prototype.handleShoot = function(mx, my){
     if(this.myTurn === GameTurn){
-        if( this.bullet.shoot === false){
+        if( this.bullet.Bshoot === false){
         var pwer = 4.3 - 0.0125*(power.x-100);
         this.bullet.pos.x = this.pos.x;
         this.bullet.pos.y = this.pos.y;
@@ -393,8 +445,8 @@ NPCObj.prototype.handleShoot = function(mx, my){
         this.bullet.velocity = new PVector(xadd1, yadd1);
         this.bullet.velocity.div(2);
         this.bullet.release = false;
-        this.bullet.shoot = true;
-        this.shoot = true;
+        this.bullet.Bshoot = true;
+        this.Nshoot = true;
         }
         
     }
@@ -406,20 +458,32 @@ NPCObj.prototype.changeState = function(x){
 };
 NPCObj.prototype.computeVel = function(xf, yf){
     if(this.myTurn === GameTurn){
-        if( this.bullet.shoot === false){
+        if( this.bullet.Bshoot === false){
             var ang = 360*adeg - this.sangle;
             var top = 0.5*gravity.y*((xf - this.pos.x)*(xf - this.pos.x));
-            var under = -yf + this.pos.y - (tan(ang)*(xf- this.pos.x));
-            this.v0 = (sqrt(top/under))/cos(ang);
+            var under = -yf + this.pos.y - (tan(this.sangle)*(xf- this.pos.x));
+            var dev = top/under;
+            if( dev < 0){
+                var ab = abs(dev);
+                this.v0 = (sqrt(ab))/cos(ang);
+            }
+            else if( dev > 0){
+                this.v0 = (sqrt(dev))/cos(ang);
+            }
+            else{
+                this.v0 = random(0, 12);
+            }
+            if( abs(this.v0) > 70){
+                this.v0 = random(0, 12);
+            }
             this.bullet.pos.x = this.pos.x;
             this.bullet.pos.y = this.pos.y;
-            var xadd1 =   30*cos(this.sangle);
-            var yadd1 =   30*sin(this.sangle);
+            var xadd1 =  abs(this.v0)*cos(this.sangle);
+            var yadd1 =   abs(this.v0)*sin(this.sangle);
             this.bullet.velocity = new PVector(xadd1, yadd1);
-            this.bullet.velocity.div(4);
-            this.bullet.release = false;
-            this.bullet.shoot = true;
-            this.shoot = true;  
+
+            this.bullet.Bshoot = true;
+            this.Nshoot = true;  
         }
         
     }
@@ -433,17 +497,26 @@ waitState.prototype.execute = function(me){
         me.goFirst = round(random(1, 2));
         me.numMoves =round(random(0, 2)) ;
         me.dir = round(random(1, 2));
+        me.Nshoot = false;
+        me.bullet.range = false;
+        me.bullet.pos.x = me.pos.x;
+        me.bullet.pos.y = me.pos.y;
+        me.bullet.Bshoot = false;
         me.changeState(1);
     }
 };
 moveState.prototype.execute = function(me){
+    if(me.health <= 0){
+        me.changeState(3);
+    }
     if(me.numMoves === 0){
-        if((me.shoot === true)&& (me.bullet.range === true)){
-            GameTurn++;
-            me.changeState(0);
+        if(me.pos.x > user.pos.x){
+            me.turnAngle = round(random(0, 30))*adeg + 180*adeg ;
         }
-        //me.handleShoot();
-        me.computeVel(user.pos.x, user.pos.x);
+        else{
+            me.turnAngle = round(random(0, 30))*adeg + 270*adeg;
+        }
+        me.changeState(2);
     }
     if((me.step > 0) && (me.pos.x > 20) && (me.pos.x < 380) && ((me.step1 > 0) || (me.step2 > 0) )){
         if( me.numMoves === 1){
@@ -474,38 +547,64 @@ moveState.prototype.execute = function(me){
         }
     }
     else{
-        
-        
-        
-        if((me.shoot === true) && (me.bullet.range === true)){
-            GameTurn++;
-            me.changeState(0);
+        if(me.pos.x > user.pos.x){
+            me.turnAngle = round(random(0, 30))*adeg + 180*adeg ;
         }
-        //me.handleShoot();
-        me.computeVel(user.pos.x, user.pos.x);
+        else{
+            me.turnAngle = round(random(0, 30))*adeg + 270*adeg;
+        }
+        me.changeState(2);
     }
-    
-    
+    fill(232, 0, 0);
+    //textSize(15);
+    //text(me.v0, me.pos.x, me.pos.y + 40, 20, 20);
+    //text(me.turnAngle, me.pos.x, me.pos.y + 50, 20, 20);
+    //text(me.sangle, me.pos.x, me.pos.y + 60, 20, 20);
 };
 angleState.prototype.execute = function(me){
+    if(me.health <= 0){
+        me.changeState(3);
+    }
+    if( me.sangle > (me.turnAngle+ 5*adeg)){
+        me.sangle = me.sangle - adeg;
+    }
+    else if( me.sangle < (me.turnAngle - 5*adeg)){
+        me.sangle = me.sangle + adeg;
+    }
+    else{
+      //  me.computeVel(user.pos.x, user.pos.x);
+        if((me.Nshoot === true)&& (me.bullet.range === true)){
+            me.changeState(3);
+        }
+        else if(me.bullet.Bshoot === false) {
+            me.computeVel(user.pos.x, user.pos.x);
+        }
+    }
+    
+    //fill(232, 0, 0);
+    //textSize(15);
+    //text(me.Nshoot, me.pos.x, me.pos.y + 30, 10, 10);
+   // text(me.bullet.range, me.pos.x, me.pos.y + 20, 10, 10);
+   // text(me.bullet.Bshoot, me.pos.x, me.pos.y + 8, 10, 10);
+  //  text(me.v0, me.pos.x, me.pos.y + 40, 20, 20);
+  //  text(me.turnAngle, me.pos.x, me.pos.y + 50, 20, 20);
+  //  text(me.sangle, me.pos.x, me.pos.y + 60, 20, 20);
 
 };
 shootState.prototype.execute = function(me){
-  //  me.draw();
-    if(me.myTurn === GameTurn){
-        if( me.bullet.shoot === false){
-      //  var pwer = 4.3 - 0.0125*(power.x-100);
-        me.bullet.pos.x = me.pos.x;
-        me.bullet.pos.y = me.pos.y;
-        var xadd1 = me.pos.x + 30*cos(me.sangle);
-        var yadd1 = me.pos.y + 30*sin(me.sangle);
-        me.bullet.velocity = new PVector(xadd1-me.pos.x, yadd1 -  me.pos.y);
-        me.bullet.velocity.div(2);
-      //  me.bullet.release = false;
-        me.bullet.shoot = true;
-        }
-        
+    if(GameTurn >= NPC.length){
+        user.bullet.pos.x = user.pos.x;
+        user.bullet.pos.y = user.pos.y;
+        user.bullet.range = false;
+        user.moves = 100;
+        GameTurn = 0;
+        me.changeState(0);
     }
+    else{
+        GameTurn++;
+        me.changeState(0);
+    }
+    
 };
 //Ball Object Functions
 ballObj.prototype.applyForce = function(force) {
@@ -515,31 +614,35 @@ ballObj.prototype.applyForce = function(force) {
 ballObj.prototype.checkBall = function(){
     if(this.pos.y > 400){
         this.range = true;
-        this.shoot = false;
+        this.Bshoot = false;
     }
-    if(this.shoot === true){
+    if(this.Bshoot === true){
         for(var i = 0; i < NPC.length; i++){
             var dis = dist(this.pos.x, this.pos.y, NPC[i].pos.x, NPC[i].pos.y);
             if((dis < 20) && (this.own ===1) && (NPC[i].health > 0) ){
                 makeExplosion(this.pos.x, this.pos.y);
                 NPC[i].health = NPC[i].health - 20;
-                this.shoot = false;
+                this.Bshoot = false;
                 this.range = true;
-                //this.hit = true;
             }
         }
         var dis2 = dist(this.pos.x, this.pos.y, user.pos.x, user.pos.y);
         if((dis2 < 20) && (this.own ===2)){
             makeExplosion(this.pos.x, this.pos.y);
-            this.shoot = false;
+            if(gamelevel === 1){
+                user.health = user.health - 20;
+            }
+            else{
+                user.health = user.health - 30;
+            }
+            this.Bshoot = false;
             this.range = true;
-           // this.hit = true;
         }
     }
 };
 ballObj.prototype.updateposition = function() {
     this.checkBall();
-    if(this.shoot){
+    if(this.Bshoot){
         var gravityForce = PVector.mult(gravity, this.mass);
         this.applyForce(gravityForce);
        // var windForce = PVector.mult(wind, this.mass);
@@ -550,7 +653,7 @@ ballObj.prototype.updateposition = function() {
         this.velocity.add(this.acceleration);
         this.pos.add(this.velocity);
         this.acceleration.set(0, 0);
-        this.aAcc = this.velocity.mag()/16;	
+        this.aAcc = this.velocity.mag()/16; 
         if (this.velocity.x < 0) {
             this.aAcc = -this.aAcc;
         }
@@ -599,11 +702,34 @@ powerObj.prototype.stopDragging = function(mx, my){
 mousePressed = function(){
     power.handleClick(mouseX, mouseY);
     user.handleShoot(mouseX,mouseY);
-    if( (mouseX > 140) && (mouseX < 260) && (mouseY > 130) && (mouseY < 170) && (gameState === 0)){
-        gameState = 2; // start game
+    if( (mouseX > 140) && (mouseX < 260) && (mouseY > 130) && (mouseY < 170)){
+        if(gameState === 0){
+            gameState = 3; // start game
+        }
+        else if (gameState === 3){
+            gamelevel = 1; // level easy
+            makeNPC();
+            gameState = 2; // game play
+        }
     }
-    if( (mouseX > 140) && (mouseX < 260) && (mouseY > 200) && (mouseY < 240) && (gameState === 0)){
-        gameState = 1; // instruction
+    if( (mouseX > 140) && (mouseX < 260) && (mouseY > 200) && (mouseY < 240)){
+        if(gameState === 0){
+            gameState = 1; // instruction
+        }
+        else if (gameState === 3){
+            gamelevel = 2; // medium
+            makeNPC();
+            gameState = 2; // game play
+        }
+
+    }
+    if( (mouseX > 140) && (mouseX < 260) && (mouseY > 270) && (mouseY < 310)){
+        if (gameState === 3){
+            gamelevel = 3; // medium
+            makeNPC();
+            gameState = 2; // game play
+        }
+
     }
     if( (mouseX > 180) && (mouseX < 220) && (mouseY > 345) && (mouseY < 370) && (gameState === 1)){
         gameState = 0; // go back to main menu from instruction menu
@@ -618,6 +744,7 @@ mouseReleased = function() {
 };
 
 // Other functions
+
 var drawExplosion = function(){
     for (var i=0; i<explode.length; i++) {
         if (explode[i].timeLeft > 0) {
@@ -662,47 +789,103 @@ var makewind = function(){
         curFrame = frameCount;
         windSpeed = random(-0.03, 0.03);
     }
+    noStroke();
+   
+    fill(255, 255, 255);
+    rect(305, 5, 90, 30, 5);
     fill(0, 0, 0);
     stroke(0, 0, 0);
+    
     if(windSpeed < 0){
-        triangle(340, 10, 340, 30, 330,20);
+        triangle(340, 15, 340, 25, 330,20);
         line(340, 20, 380, 20);
         textSize(10);
         text(windSpeed*100, 310, 15, 10, 10);
     }
     else{
-        triangle(380, 10, 380, 30, 390,20);
+        triangle(380, 15, 380, 25, 390,20);
         line(340, 20, 380, 20);
         textSize(10);
         text(windSpeed*100, 310, 15, 10, 10);
     }
 };
 var state0 = function(){
-    fill(175, 233, 247);
     noStroke();
+    fill(33, 32, 33);
+    rect( 138, 132, 120, 40);
+    rect( 138, 203, 120, 40);
+    fill(175, 233, 247);
     rect( 140, 130, 120, 40);
     rect( 140, 200, 120, 40);
-    fill(235, 40, 128);
     textSize(25);
-    text("START",160,158);
-    text("HINT",170,228);
+    fill(64, 57, 57);
+    text("START",166,163);
+    text("HINT",176,234);
+    fill(235, 40, 128);
+    text("START",167,161);
+    text("HINT",178,232);
+    
     fill(235, 235, 235);
     textSize(15);
-    text("DEV:NHAN PHAM", 130, 380, 300, 200);
+    text("DEV:NHAN PHAM", 152, 383, 300, 200);
+    textSize(40);
+    var f = createFont("impact");
+    textFont(f);
+    fill(0, 0, 0);
+    text("PLANETS INVADER", 63, 53, 400, 100);
+    fill(189, 0, 0);
+    text("PLANETS INVADER", 65, 50, 400, 100);
 };
-var takeBullet = function(){
-    if((ball.range === true) || (ball.hit === true)){
-        ball.shoot = false;
+var state3 = function(){
+    
+    noStroke();
+    fill(33, 32, 33);
+    rect( 138, 132, 120, 40);
+    rect( 138, 203, 120, 40);
+    rect( 138, 273, 120, 40);
+    fill(175, 233, 247);
+    rect( 140, 130, 120, 40);
+    rect( 140, 200, 120, 40);
+    rect( 140, 270, 120, 40);
+    textSize(25);
+    fill(64, 57, 57);
+    text("EASY",176,163);
+    text("MEDIUM",158,234);
+    text("HARD",172,301);
+    fill(235, 40, 128);
+    text("EASY",177,161);
+    text("MEDIUM",159,232);
+    text("HARD",173,299);
+    fill(235, 235, 235);
+    textSize(15);
+    text("DEV:NHAN PHAM", 152, 383, 300, 200);
+    textSize(40);
+    var f = createFont("impact");
+    textFont(f);
+    fill(0, 0, 0);
+    text("PLANETS INVADER", 63, 53, 400, 100);
+    fill(189, 0, 0);
+    text("PLANETS INVADER", 65, 50, 400, 100);
+};
+var welcomeMove = function(){
+    user.draw();
+    if( user.pos.x < 0){
+        user.pos.x = 400;
     }
+    if(user.pos.x > 400){
+        user.pos.x = 0;
+    }
+    user.pos.x++;
 };
 var draw = function() {
    background(242, 119, 154);
     noStroke();
+    
     switch(gameState){
        case 0 : // start screen
-           
             drawSky(250);
             drawmount();
+            welcomeMove();
             makeFall();
             state0();
            break;
@@ -721,7 +904,7 @@ var draw = function() {
                 drawmount();
                 user.draw();
                 user.move();
-                
+                user.changeTurn();
                 for (var i=0; i<NPC.length; i++) {
                     //if(NPC[i].bullet.pos.y < 20){
                    //     pushMatrix();
@@ -741,46 +924,74 @@ var draw = function() {
             else{
                 drawSky(250);
                 drawmount();
-               // makeFall();
                 user.draw();
                 user.move();
-                //power.draw();
+                user.changeTurn();
                 for (var i=0; i<NPC.length; i++) {
-                    //if(NPC[i].bullet.pos.y < 20){
-                   //     pushMatrix();
-                   //     noStroke();
-                   //     translate(0, 200);
-                   //     drawSky(250);
-                   //     drawmount();
-                   //     user.draw();
-                   //     user.move();
-                   //     NPC[i].draw();
-                   //     NPC[i].NPCState[NPC[i].curState].execute(NPC[i]);
-                   //     popMatrix();
-                   // }
-                   // else{
-                   //     noStroke();
-                   //     drawSky(250);
-                   //     drawmount();
-                   //     user.draw();
-                   //     user.move();
                         NPC[i].draw();
                         NPC[i].NPCState[NPC[i].curState].execute(NPC[i]);
-                  //  }
                 }
                 drawExplosion();
             }
             power.draw();
             makewind();
-            stroke(255, 0, 0);
-            
+            var check = 0;
+            for (var i=0; i<NPC.length; i++) {
+                if(NPC[i].health <= 0){
+                    check++;
+                }
+                if(check === NPC.length){
+                    gameState = 4;
+                }
+            }
+            if(user.health  <= 0){
+                gameState = 5;
+            }
         break;
+        case 3: // chose level
+            drawSky(250);
+            drawmount();
+            welcomeMove();
+            makeFall();
+            state3();
+            break;
+        case 4: // game win
+            drawSky(250);
+            drawmount();
+            makeFall();
+            textSize(40);
+            var f = createFont("impact");
+            textFont(f);
+            fill(0, 0, 0);
+            text("MISSION FAIL", 93, 103, 400, 100);
+            fill(189, 0, 0);
+            text("MISSION FAIL", 100, 100, 400, 100);
+            break;
+        case 5: // game lose
+            drawSky(250);
+            drawmount();
+            makeFall();
+            if (curFrame < frameCount-15) {
+                curFrame = frameCount;
+                makeExplosion(random(20, 380), random(30,380));
         
+            }
+            drawExplosion();
+            textSize(40);
+            var f = createFont("impact");
+            textFont(f);
+            fill(0, 0, 0);
+            text("MISSION ACCOMPLISH", 39, 103, 400, 100);
+            fill(189, 0, 0);
+            text("MISSION ACCOMPLISH", 33, 100, 400, 100);
+            
+            break;
+            
+            
    }
     makeFall();
-    
-
 };
+
 
 
 
