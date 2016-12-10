@@ -958,25 +958,13 @@ var draw = function() {
         case 4: // game win
             drawSky(250);
             drawmount();
-            makeFall();
-            textSize(40);
-            var f = createFont("impact");
-            textFont(f);
-            fill(0, 0, 0);
-            text("MISSION FAIL", 93, 103, 400, 100);
-            fill(189, 0, 0);
-            text("MISSION FAIL", 100, 100, 400, 100);
-            break;
-        case 5: // game lose
-            drawSky(250);
-            drawmount();
-            makeFall();
             if (curFrame < frameCount-15) {
                 curFrame = frameCount;
                 makeExplosion(random(20, 380), random(30,380));
         
             }
             drawExplosion();
+            makeFall();
             textSize(40);
             var f = createFont("impact");
             textFont(f);
@@ -984,6 +972,20 @@ var draw = function() {
             text("MISSION ACCOMPLISH", 39, 103, 400, 100);
             fill(189, 0, 0);
             text("MISSION ACCOMPLISH", 33, 100, 400, 100);
+            break;
+        case 5: // game lose
+            drawSky(250);
+            drawmount();
+            makeFall();
+            
+            textSize(40);
+            var f = createFont("impact");
+            textFont(f);
+            fill(0, 0, 0);
+            text("MISSION FAIL", 93, 103, 400, 100);
+            fill(189, 0, 0);
+            text("MISSION FAIL", 100, 100, 400, 100);
+            
             
             break;
             
@@ -991,13 +993,5 @@ var draw = function() {
    }
     makeFall();
 };
-
-
-
-
-
-
-
-
 
 }};
