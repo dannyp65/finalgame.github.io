@@ -134,6 +134,8 @@ var ballObj = function(x, y, z, type) {
     this.hit = false;
     this.range = false;
     this.type = type;
+    this.state = 0;
+    this.curFrame = frameCount;
 };
 var uObj = function(x,y){
     this.moves = 100;
@@ -145,14 +147,13 @@ var uObj = function(x,y){
     this.type = 1;
     this.bullet = new ballObj(x,y,1,this.type);
     this.power = 0;
-    
+    this.state = 0;
+    this.curFrame = frameCount;
 };
 var powerObj = function(x,y){
     this.x = x;
     this.y = y; 
     this.drag = false;
-
-    
 };
 var NPCObj = function(x,y, turnNum){
     this.pos = new PVector(x,y);
@@ -171,6 +172,8 @@ var NPCObj = function(x,y, turnNum){
     this.goFirst = 0;
     this.v0 = 0;
     this.health = 100;
+    this.state = 0;
+    this.curFrame = frameCount;
 };
 // Declare new Objects
 var exObj = function(x, y) {
@@ -184,7 +187,6 @@ var exObj = function(x, y) {
 var power = new powerObj(250,380);
 var user =  new uObj(round(random(100, 350)),round(random(100, 350)));
 var ball = new ballObj(100,100);
-//var NPC = [new NPCObj(320, 180, 2), new NPCObj(320, 250, 3), new NPCObj(200, 250, 4)];
 var NPC = [];
 var explode = [];
 var makeNPC = function(){
@@ -244,12 +246,12 @@ var dcircle = function(x, y, s, r, b, g, z) {
 // All Draw Function
 uObj.prototype.draw = function() {
     this.bullet.draw();
-    fill(168, 168, 168);
-    ellipse(this.pos.x, this.pos.y,40, 10);
+    fill(54, 54, 69);
+    ellipse(this.pos.x, this.pos.y,45, 14);
     fill(36, 36, 36);
     ellipse(this.pos.x, this.pos.y,20, 5);
-    fill(30, 229, 247, 70);
-    arc(this.pos.x, this.pos.y,20, 20, 180*adeg, 360*adeg);
+    fill(130, 150, 250, 100);
+    arc(this.pos.x, this.pos.y,25, 24, 180*adeg, 360*adeg);
     strokeWeight(2);
     stroke(255, 0, 0);
     var xadd1 = this.pos.x + 30*cos(this.sangle);
@@ -258,31 +260,53 @@ uObj.prototype.draw = function() {
     var yadd2 = this.pos.y + 25*sin(this.sangle + 15*adeg);
     var xadd3 = this.pos.x + 25*cos(this.sangle - 15*adeg);
     var yadd3 = this.pos.y + 25*sin(this.sangle - 15*adeg);
-    
     strokeWeight(3);
     stroke(161, 156, 156);
     line(this.pos.x - 25, this.pos.y - 15, this.pos.x +25 , this.pos.y-15);
     stroke(250, 37, 73);
-
     line(this.pos.x - 25, this.pos.y - 15, this.pos.x - 25 + this.health/2, this.pos.y-15);
-    //line(this.pos.x, this.pos.y, this.pos.x + xadd,this.pos.y + yadd);
     fill(245, 175, 35);
     noStroke();
     triangle(xadd1, yadd1, xadd2, yadd2, xadd3, yadd3);
+    switch(this.state){
+        case 0:
+            noFill();
+            stroke(95, 157, 250);
+            strokeWeight(1);
+            ellipse(this.pos.x, this.pos.y + 7, 10, 2);
+            break;
+        case 1:
+            noFill();
+            stroke(95, 157, 250);
+            strokeWeight(1);
+            ellipse(this.pos.x, this.pos.y + 10, 12, 3);
+            break;
+        case 2:
+            noFill();
+            stroke(95, 157, 250);
+            strokeWeight(1);
+            ellipse(this.pos.x, this.pos.y + 15, 17, 3);
+            break;    
+    }
+    if (this.curFrame < frameCount-35) {
+        this.curFrame = frameCount;
+        this.state++;
+        if (this.state >2) {
+            this.state = 0;
+        }
+    }
 };
 NPCObj.prototype.draw = function() {
     if(this.health > 0){
     this.bullet.draw();
     this.bullet.updateposition();
     noStroke();
-    fill(168, 168, 168);
+    fill(13, 12, 13);
     ellipse(this.pos.x, this.pos.y,40, 10);
-    fill(36, 36, 36);
+    fill(201, 20, 201);
     ellipse(this.pos.x, this.pos.y,20, 5);
-    fill(8, 6, 1, 150);
+    fill(252, 8, 32, 150);
     arc(this.pos.x, this.pos.y,20, 20, 180*adeg, 360*adeg);
-    
-    
     var xadd1 = this.pos.x + 30*cos(this.sangle);
     var yadd1 = this.pos.y + 30*sin(this.sangle);
     var xadd2 = this.pos.x + 25*cos(this.sangle + 15*adeg );
@@ -300,12 +324,36 @@ NPCObj.prototype.draw = function() {
     line(this.pos.x - 25, this.pos.y - 15, this.pos.x +25 , this.pos.y-15);
     stroke(162, 235, 120);
     line(this.pos.x - 25, this.pos.y - 15, this.pos.x - 25 + this.health/2, this.pos.y-15);
-    
-    //line(this.pos.x, this.pos.y, this.pos.x + xadd,this.pos.y + yadd);
+    switch(this.state){
+        case 0:
+            noFill();
+            stroke(227, 59, 132);
+            strokeWeight(1);
+            ellipse(this.pos.x, this.pos.y + 7, 10, 2);
+            break;
+        case 1:
+            noFill();
+            stroke(227, 59, 132);
+            strokeWeight(1);
+            ellipse(this.pos.x, this.pos.y + 10, 12, 3);
+            break;
+        case 2:
+            noFill();
+            stroke(227, 59, 132);
+            strokeWeight(1);
+            ellipse(this.pos.x, this.pos.y + 15, 17, 3);
+            break;    
+    }
+    if (this.curFrame < frameCount-35) {
+        this.curFrame = frameCount;
+        this.state++;
+        if (this.state >2) {
+            this.state = 0;
+        }
+    }
     }
 };
 ballObj.prototype.draw = function() {
-    
     if(this.Bshoot){
         if(this.type === 1){
             noStroke();
@@ -323,11 +371,8 @@ ballObj.prototype.draw = function() {
             pushMatrix();
             translate(this.pos.x, this.pos.y);
             rotate(ang);
-            fill(209, 202, 202);
-            ellipse(0, 0, 20, 10);
             fill(0, 0, 0);
-            arc(-10,5, 10, 10,50*adeg, -50*adeg);
-           // ellipse(0, -5, 5, 5);
+            ellipse(0, 0, 20, 10);
             popMatrix();
         }
     }
@@ -376,36 +421,33 @@ powerObj.prototype.draw = function() {
     text("FIRE", 330, 369, 60,50);
     textSize(12);
     text(str, 63, 375, 60, 60);
-   // text(pwer, 100, 100, 50, 50);
 };
 
 // user Object functions
 uObj.prototype.move =function(){
     this.bullet.updateposition();
     if(this.turn === GameTurn ){
-     if((keyArray[LEFT] === 1) && (this.pos.x > 35) && (this.moves > 0)){
+        if((keyArray[LEFT] === 1) && (this.pos.x > 35) && (this.moves > 0)){
+                this.moves = this.moves -1;
+                this.pos.x= this.pos.x -1;
+        }
+
+        if((keyArray[RIGHT] === 1) && (this.pos.x <780) && (this.moves > 0)){
             this.moves = this.moves -1;
-            this.pos.x= this.pos.x -1;
-    }
-       
-    if((keyArray[RIGHT] === 1) && (this.pos.x <780) && (this.moves > 0)){
-        this.moves = this.moves -1;
-        this.pos.x= this.pos.x +1;
-    }
-    if((keyArray[DOWN] === 1) && (this.pos.y > 20)){
-        if(this.sangle < 360*adeg){
-            this.sangle= this.sangle + 1*adeg;
+            this.pos.x= this.pos.x +1;
         }
-    }
-      
-    if((keyArray[UP] === 1) && (this.pos.y <380)){
-        if(this.sangle > 180*adeg){
-            this.sangle= this.sangle - 1*adeg;
+        if((keyArray[DOWN] === 1) && (this.pos.y > 20)){
+            if(this.sangle < 360*adeg){
+                this.sangle= this.sangle + 1*adeg;
+            }
         }
-    }
-    }
-    
-   
+
+        if((keyArray[UP] === 1) && (this.pos.y <380)){
+            if(this.sangle > 180*adeg){
+                this.sangle= this.sangle - 1*adeg;
+            }
+        }
+    }   
 };
 uObj.prototype.handleShoot = function(mx, my){
     if( (mx > 320) && (mx < 400) && (my > 340) && (my < 400) && (gameState === 2) && (this.turn === GameTurn)){
@@ -421,10 +463,7 @@ uObj.prototype.handleShoot = function(mx, my){
         this.bullet.Bshoot = true;
         this.Ushoot = true; 
         }
-        
-    }
-    
-
+    }    
 };
 uObj.prototype.changeTurn = function(){
     if((GameTurn === 0) && (this.Ushoot === true) && (this.bullet.range === true)){
@@ -556,10 +595,6 @@ moveState.prototype.execute = function(me){
         me.changeState(2);
     }
     fill(232, 0, 0);
-    //textSize(15);
-    //text(me.v0, me.pos.x, me.pos.y + 40, 20, 20);
-    //text(me.turnAngle, me.pos.x, me.pos.y + 50, 20, 20);
-    //text(me.sangle, me.pos.x, me.pos.y + 60, 20, 20);
 };
 angleState.prototype.execute = function(me){
     if(me.health <= 0){
@@ -572,7 +607,6 @@ angleState.prototype.execute = function(me){
         me.sangle = me.sangle + adeg;
     }
     else{
-      //  me.computeVel(user.pos.x, user.pos.x);
         if((me.Nshoot === true)&& (me.bullet.range === true)){
             me.changeState(3);
         }
@@ -580,16 +614,6 @@ angleState.prototype.execute = function(me){
             me.computeVel(user.pos.x, user.pos.x);
         }
     }
-    
-    //fill(232, 0, 0);
-    //textSize(15);
-    //text(me.Nshoot, me.pos.x, me.pos.y + 30, 10, 10);
-   // text(me.bullet.range, me.pos.x, me.pos.y + 20, 10, 10);
-   // text(me.bullet.Bshoot, me.pos.x, me.pos.y + 8, 10, 10);
-  //  text(me.v0, me.pos.x, me.pos.y + 40, 20, 20);
-  //  text(me.turnAngle, me.pos.x, me.pos.y + 50, 20, 20);
-  //  text(me.sangle, me.pos.x, me.pos.y + 60, 20, 20);
-
 };
 shootState.prototype.execute = function(me){
     if(GameTurn >= NPC.length){
@@ -627,7 +651,7 @@ ballObj.prototype.checkBall = function(){
             }
         }
         var dis2 = dist(this.pos.x, this.pos.y, user.pos.x, user.pos.y);
-        if((dis2 < 20) && (this.own ===2)){
+        if((dis2 < 30) && (this.own ===2)){
             makeExplosion(this.pos.x, this.pos.y);
             if(gamelevel === 1){
                 user.health = user.health - 20;
@@ -665,9 +689,7 @@ ballObj.prototype.updateposition = function() {
         else{
             this.angle += this.aVelocity*adeg;
         }
-    
     }
- 
 };
 
 //Power Object Functions
@@ -709,6 +731,8 @@ mousePressed = function(){
         else if (gameState === 3){
             gamelevel = 1; // level easy
             makeNPC();
+            user.pos.x = round(random(30, 370));
+            user.pos.y = round(random(30, 350));
             gameState = 2; // game play
         }
     }
@@ -719,6 +743,8 @@ mousePressed = function(){
         else if (gameState === 3){
             gamelevel = 2; // medium
             makeNPC();
+            user.pos.x = round(random(30, 370));
+            user.pos.y = round(random(30, 350));
             gameState = 2; // game play
         }
 
@@ -727,6 +753,8 @@ mousePressed = function(){
         if (gameState === 3){
             gamelevel = 3; // medium
             makeNPC();
+            user.pos.x = round(random(30, 370));
+            user.pos.y = round(random(30, 350));
             gameState = 2; // game play
         }
 
@@ -906,17 +934,8 @@ var draw = function() {
                 user.move();
                 user.changeTurn();
                 for (var i=0; i<NPC.length; i++) {
-                    //if(NPC[i].bullet.pos.y < 20){
-                   //     pushMatrix();
-                    //    translate(0, 200);
-                   //     NPC[i].draw();
-                    //    NPC[i].NPCState[NPC[i].curState].execute(NPC[i]);
-                    //    popMatrix();
-                    //}
-                   // else{
                         NPC[i].draw();
                         NPC[i].NPCState[NPC[i].curState].execute(NPC[i]);
-                   // }
                 }
                 drawExplosion();
                 popMatrix();
